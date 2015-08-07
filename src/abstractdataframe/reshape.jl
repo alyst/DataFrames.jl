@@ -243,7 +243,7 @@ NOTE: Not exported.
 ### Constructor
 
 ```julia
-RepeatedVector(d::AbstractVector...)
+StackedVector(d::AbstractVector...)
 ```
 
 ### Arguments
