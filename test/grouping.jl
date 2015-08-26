@@ -32,6 +32,11 @@ module TestGrouping
 
     @test combine(map(h, gd)) == combine(map(g, ga))
 
+    # testing pool overflow
+    df2 = DataFrame(v1 = pool(collect(1:1000)), v2 = pool(fill(1, 1000)))
+    @test groupby(df2, [:v1, :v2]).starts == collect(1:1000)
+    @test groupby(df2, [:v2, :v1]).starts == collect(1:1000)
+
     # issue #960
     x = pool(collect(1:20))
     df = DataFrame(v1=x, v2=x)
