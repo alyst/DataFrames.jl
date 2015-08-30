@@ -37,6 +37,11 @@ module TestGrouping
     @test groupby(df2, [:v1, :v2]).starts == collect(1:1000)
     @test groupby(df2, [:v2, :v1]).starts == collect(1:1000)
 
+    # grouping empty frame
+    @test groupby(DataFrame(A=Int[]), :A).starts == Int[]
+    # grouping single row
+    @test groupby(DataFrame(A=Int[1]), :A).starts == Int[1]
+
     # issue #960
     x = pool(collect(1:20))
     df = DataFrame(v1=x, v2=x)
