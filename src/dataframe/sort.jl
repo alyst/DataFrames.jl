@@ -11,10 +11,5 @@ end
 
 function Base.sort!(df::DataFrame, a::Base.Sort.Algorithm, o::Base.Sort.Ordering)
     p = sortperm(df, a, o)
-    pp = similar(p)
-    for col in columns(df)
-        copy!(pp,p)
-        Base.permute!!(col, pp)
-    end
-    df
+    permute!(df, p)
 end

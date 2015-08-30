@@ -86,6 +86,8 @@ export @~,
        # Remove after deprecation period
        read_rda
 
+import Base: permute!, ipermute!
+
 ##############################################################################
 ##
 ## Load files

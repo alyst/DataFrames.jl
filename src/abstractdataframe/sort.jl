@@ -282,3 +282,23 @@ Base.sortperm(df::AbstractDataFrame, a::Algorithm, o::Ordering) = sortperm(df, a
 # Extras to speed up sorting
 Base.sortperm{V}(df::AbstractDataFrame, a::Algorithm, o::FastPerm{Sort.ForwardOrdering,V}) = sortperm(o.vec)
 Base.sortperm{V}(df::AbstractDataFrame, a::Algorithm, o::FastPerm{Sort.ReverseOrdering,V}) = reverse(sortperm(o.vec))
+
+# permute rows
+function Base.permute!(df::AbstractDataFrame, p::AbstractVector)
+    pp = similar(p)
+    for col in columns(df)
+        copy!(pp, p)
+        Base.permute!!(col, pp)
+    end
+    df
+end
+
+# apply inverse of given rows permutation
+function Base.ipermute!(df::AbstractDataFrame, p::AbstractVector)
+    pp = similar(p)
+    for col in columns(df)
+        copy!(pp, p)
+        Base.ipermute!!(col, pp)
+    end
+    df
+end
