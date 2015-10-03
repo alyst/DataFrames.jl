@@ -115,8 +115,12 @@ index(sdf::SubDataFrame) = index(sdf.parent)
 nrow(sdf::SubDataFrame) = ncol(sdf) > 0 ? length(sdf.rows)::Int : 0
 ncol(sdf::SubDataFrame) = length(index(sdf))
 
+function Base.getindex(sdf::SubDataFrame, col::@compat(Union{Symbol,Real}))
+    return sdf.parent[sdf.rows, col]
+end
+
 function Base.getindex(sdf::SubDataFrame, colinds::Any)
-    return sdf.parent[sdf.rows, colinds]
+    return SubDataFrame(sdf.parent[colinds], sdf.rows)
 end
 
 function Base.getindex(sdf::SubDataFrame, rowinds::Any, colinds::Any)
