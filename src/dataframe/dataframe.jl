@@ -320,7 +320,7 @@ end
 ##
 ##############################################################################
 
-_concat_args(args...; delim=",") = join(filter( x -> !isempty(x), [args...]), delim)
+_concat_args(args...; delim=",") = join(filter(x -> !isempty(x), [args...]), delim)
 
 for rows in [nothing, :single, :multiple, :colon]
   rows_arg = "" # rows argument declaration
