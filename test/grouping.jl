@@ -2,7 +2,7 @@ module TestGrouping
     using Base.Test
     using DataFrames
 
-    df = DataFrame(a = repeat([1, 2, 3, 4], outer=[2]),
+    df = DataFrame(a = repeat([4, 3, 2, 1], outer=[2]),
                    b = repeat([2, 1], outer=[4]),
                    c = randn(8))
     #df[6, :a] = NA
@@ -12,20 +12,30 @@ module TestGrouping
 
     f(df) = DataFrame(cmax = maximum(df[:c]))
 
-    sdf = sort(df, cols=cols)
-    bdf = by(df, cols, f)
+    sdf = unique(df[cols])
 
-    @test bdf[cols] == unique(sdf[cols])
+    # by() without groups sorting
+    bdf = by(df, cols, f)
+    @test bdf[cols] == sdf
+
+    # by() with groups sorting
+    sbdf = by(df, cols, f, sort=true)
+    @test sbdf[cols] == sort(sdf)
 
     byf = by(df, :a, df -> DataFrame(bsum = sum(df[:b])))
 
     @test all(T -> T <: AbstractVector, map(typeof, colwise([sum], df)))
     @test all(T -> T <: AbstractVector, map(typeof, colwise(sum, df)))
 
+    # groupby() without groups sorting
     gd = groupby(df, cols)
     ga = map(f, gd)
-
     @test bdf == combine(ga)
+
+    # groupby() with groups sorting
+    gd = groupby(df, cols, sort=true)
+    ga = map(f, gd)
+    @test sbdf == combine(ga)
 
     g(df) = DataFrame(cmax1 = df[:cmax] + 1)
     h(df) = g(f(df))
