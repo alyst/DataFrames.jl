@@ -49,7 +49,7 @@ If `d` is not provided, a curried version of groupby is given.
 
 An iterator over a `GroupedDataFrame` returns a `SubDataFrame` view
 for each grouping into `d`. A `GroupedDataFrame` also supports
-indexing by groups and `map`.
+indexing by groups, `map` and `mapdf`.
 
 See the following for additional split-apply-combine operations:
 
@@ -77,8 +77,8 @@ vcat([g[:b] for g in gd]...)
 for g in gd
     println(g)
 end
-map(d -> mean(d[:c]), gd)   # returns a GroupApplied object
-combine(map(d -> mean(d[:c]), gd))
+mapdf(d -> mean(d[:c]), gd)   # returns a GroupApplied object
+combine(mapdf(d -> mean(d[:c]), gd))
 df |> groupby(:a) |> [sum, length]
 df |> groupby([:a, :b]) |> [sum, length]
 ```
@@ -136,12 +136,12 @@ _names(gd::GroupedDataFrame) = _names(gd.parent)
 ##############################################################################
 
 """
-The result of a `map` operation on a GroupedDataFrame; mainly for use
-with `combine`
+The result of a `mapdf` operation on a GroupedDataFrame; mainly for use
+with `combine` to construct an aggregated data frame.
 
 Not meant to be constructed directly, see `groupby` abnd
-`combine`. Minimal support is provided for this type. `map` is
-provided for a GroupApplied object.
+`combine`. `GroupApplied` supports `map` and `mapdf` operations
+for data frame transformations composition.
 
 """
 type GroupApplied{T}
@@ -160,13 +160,25 @@ end
 # Apply / map
 #
 
-# map() sweeps along groups
-function Base.map(f::Function, gd::GroupedDataFrame)
-    GroupApplied(gd, [wrap(f(d)) for d in gd])
+"""
+    mapdf(f::Function, gd::GroupedDataFrame)
+    mapdf(f::Function, ga::GroupApplied)
+
+    Applies function `f` to each sub frame of the grouped data frame.
+    In comparison to `map`, `mapdf` is intended for data frame transformation and
+    aggregation worklows. It expects that the output of `f` is convertable into
+    data frame.
+    The result of `mapdf` is a `GroupApplied` object that could be easily
+    transformed into the data frame (see `combine` method).
+"""
+function mapdf(f::Function, gd::GroupedDataFrame)
+    GroupApplied(gd, map(d -> wrap(f(d)), gd))
 end
-function Base.map(f::Function, ga::GroupApplied)
+function mapdf(f::Function, ga::GroupApplied)
     GroupApplied(ga.gd, map(d -> wrap(f(d)), ga.vals))
 end
+
+Base.map(f::Function, ga::GroupApplied) = map(f, ga.vals)
 
 wrap(df::AbstractDataFrame) = df
 wrap(A::Matrix) = convert(DataFrame, A)
@@ -193,7 +205,7 @@ combine(ga::GroupApplied)
 df = DataFrame(a = repeat([1, 2, 3, 4], outer=[2]),
                b = repeat([2, 1], outer=[4]),
                c = randn(8))
-combine(map(d -> mean(d[:c]), gd))
+combine(mapdf(d -> mean(d[:c]), gd))
 ```
 
 """
@@ -243,14 +255,14 @@ colwise(sum, groupby(df, :a))
 
 """
 colwise(f::Function, d::AbstractDataFrame) = Any[[f(d[idx])] for idx in 1:size(d, 2)]
-colwise(f::Function, gd::GroupedDataFrame) = map(colwise(f), gd)
+colwise(f::Function, gd::GroupedDataFrame) = mapdf(colwise(f), gd)
 colwise(f::Function) = x -> colwise(f, x)
 colwise(f) = x -> colwise(f, x)
 # apply several functions to each column in a DataFrame
 colwise{T<:Function}(fns::Vector{T}, d::AbstractDataFrame) =
     reshape(Any[[f(d[idx])] for f in fns, idx in 1:size(d, 2)],
             length(fns)*size(d, 2))
-colwise{T<:Function}(fns::Vector{T}, gd::GroupedDataFrame) = map(colwise(fns), gd)
+colwise{T<:Function}(fns::Vector{T}, gd::GroupedDataFrame) = mapdf(colwise(fns), gd)
 colwise{T<:Function}(fns::Vector{T}) = x -> colwise(fns, x)
 
 
@@ -280,7 +292,7 @@ column labeling.
 A method is defined with `f` as the first argument, so do-block
 notation can be used.
 
-`by(d, cols, f)` is equivalent to `combine(map(f, groupby(d, cols)))`.
+`by(d, cols, f)` is equivalent to `combine(mapdf(f, groupby(d, cols)))`.
 
 ### Returns
 
@@ -303,7 +315,7 @@ end
 
 """
 by(d::AbstractDataFrame, cols, f::Function; sort::Bool = false) =
-  combine(map(f, groupby(d, cols, sort = sort)))
+  combine(mapdf(f, groupby(d, cols, sort = sort)))
 by(f::Function, d::AbstractDataFrame, cols; sort::Bool = false) =
   by(d, cols, f, sort = sort)
 
@@ -359,7 +371,7 @@ end
 aggregate(gd::GroupedDataFrame, f::Function) = aggregate(gd, [f])
 function aggregate{T<:Function}(gd::GroupedDataFrame, fs::Vector{T})
     headers = _makeheaders(fs, _setdiff(_names(gd), gd.cols))
-    combine(map(x -> _aggregate(without(x, gd.cols), fs, headers), gd))
+    combine(mapdf(x -> _aggregate(without(x, gd.cols), fs, headers), gd))
 end
 (|>)(gd::GroupedDataFrame, fs::Function) = aggregate(gd, fs)
 (|>){T<:Function}(gd::GroupedDataFrame, fs::Vector{T}) = aggregate(gd, fs)

@@ -29,18 +29,20 @@ module TestGrouping
 
     # groupby() without groups sorting
     gd = groupby(df, cols)
-    ga = map(f, gd)
+    ga = mapdf(f, gd)
     @test bdf == combine(ga)
+    vgd = map(f, gd)
+    @test ga.vals == vgd
 
     # groupby() with groups sorting
     gd = groupby(df, cols, sort=true)
-    ga = map(f, gd)
+    ga = mapdf(f, gd)
     @test sbdf == combine(ga)
 
     g(df) = DataFrame(cmax1 = df[:cmax] + 1)
     h(df) = g(f(df))
 
-    @test combine(map(h, gd)) == combine(map(g, ga))
+    @test combine(mapdf(h, gd)) == combine(mapdf(g, ga))
 
     # testing pool overflow
     df2 = DataFrame(v1 = pool(collect(1:1000)), v2 = pool(fill(1, 1000)))
