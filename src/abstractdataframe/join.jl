@@ -88,13 +88,15 @@ function compose_joined_table(joiner::DataFrameJoiner, kind::Symbol,
     ncleft = ncol(joiner.dfl)
     cols = Vector{Any}(undef, ncleft + ncol(dfr_noon))
     # inner and left joins preserve non-missingness of the left frame
-    _similar_left = kind == :inner || kind == :left ? similar : similar_missing
+    # it is also preserved if all right rows have left matches
+    _similar_left = kind == :inner || kind == :left || length(rightonly_ixs.join) == 0 ? similar : similar_missing
     for (i, col) in enumerate(columns(joiner.dfl))
         cols[i] = _similar_left(col, nrow)
         copyto!(cols[i], view(col, all_orig_left_ixs))
     end
     # inner and right joins preserve non-missingness of the right frame
-    _similar_right = kind == :inner || kind == :right ? similar : similar_missing
+    # it is also preserved if all left rows have right matches
+    _similar_right = kind == :inner || kind == :right || length(leftonly_ixs.join) == 0 ? similar : similar_missing
     for (i, col) in enumerate(columns(dfr_noon))
         cols[i+ncleft] = _similar_right(col, nrow)
         copyto!(cols[i+ncleft], view(col, all_orig_right_ixs))
