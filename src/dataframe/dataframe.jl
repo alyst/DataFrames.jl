@@ -334,7 +334,7 @@ function insert_single_column!(df::DataFrame,
                                col_ind::ColumnIndex)
 
     if ncol(df) != 0 && nrow(df) != length(v)
-        throw(ArgumentError("New columns must have the same length as old columns"))
+        throw(ArgumentError("New column ($col_ind) must have the same length as old columns"))
     end
     dv = isa(v, AbstractRange) ? collect(v) : v
     if haskey(index(df), col_ind)
